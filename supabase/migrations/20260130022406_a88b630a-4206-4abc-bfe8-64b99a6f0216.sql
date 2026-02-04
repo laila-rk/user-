@@ -75,6 +75,44 @@ CREATE TABLE public.progress_records (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
+-- Create Profile Details Table
+CREATE TABLE public.profile_details (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL ,
+  first_name TEXT,
+  last_name TEXT,
+  phone TEXT,
+  gender TEXT,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- Create Table for Notification
+CREATE TABLE notification_preferences (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+
+  workout_reminders BOOLEAN NOT NULL DEFAULT true,
+  diet_meal_reminders BOOLEAN NOT NULL DEFAULT true,
+  water_intake_alerts BOOLEAN NOT NULL DEFAULT true,
+  live_session_alerts BOOLEAN NOT NULL DEFAULT true,
+  progress_updates BOOLEAN NOT NULL DEFAULT true,
+  fitness_tips BOOLEAN NOT NULL DEFAULT true,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+);
+
+-- Create Table for Progress Photos
+CREATE TABLE PUBLIC.PROGRESS_PHOTOS (
+  ID UUID PRIMARY KEY DEFAULT GEN_RANDOM_UUID(),
+  USER_ID UUID REFERENCES AUTH.USERS(ID) ON DELETE CASCADE NOT NULL,
+  IMAGE_PATH TEXT NOT NULL,
+  LABEL TEXT,
+  TAKEN_AT DATE NOT NULL DEFAULT CURRENT_DATE,
+  CREATED_AT TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Enable Row Level Security on all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workouts ENABLE ROW LEVEL SECURITY;
@@ -82,6 +120,9 @@ ALTER TABLE public.exercises ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.nutrition_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.water_intake ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.progress_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profile_details ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE PUBLIC.PROGRESS_PHOTOS ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for profiles
 CREATE POLICY "Users can view their own profile" ON public.profiles
@@ -154,6 +195,29 @@ CREATE POLICY "Users can update their own progress" ON public.progress_records
 
 CREATE POLICY "Users can delete their own progress" ON public.progress_records
   FOR DELETE USING (auth.uid() = user_id);
+
+-- RLS Policies for Updating profile Information
+CREATE POLICY "Users can manage own profile details" ON profile_details
+  FOR ALL USING (auth.uid() = user_id);
+
+-- RLS Policies for Notification Settings
+CREATE POLICY "Users can read their notification settings" ON public.notification_preferences
+ FOR SELECT USING (AUTH.UID() = user_id);
+CREATE POLICY "Users can update their notification settings" ON public.notification_preferences
+ FOR UPDATE USING (AUTH.UID() = user_id);
+CREATE POLICY "Users can insert notification settings" ON public.notification_preferences
+ FOR INSERT WITH CHECK (AUTH.UID() = user_id);
+
+-- RLS Policies for Progress Images
+CREATE POLICY "Users read own photos"
+ON PUBLIC.PROGRESS_PHOTOS
+FOR SELECT
+USING (AUTH.UID() = USER_ID);
+
+CREATE POLICY "Users insert own photos"
+ON PUBLIC.PROGRESS_PHOTOS
+FOR INSERT
+WITH CHECK (AUTH.UID() = USER_ID);
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
