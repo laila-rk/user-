@@ -60,32 +60,66 @@ export default function Fitness() {
   }, [restTime]);
 
   const fetchWorkoutData = async () => {
+    setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error("Auth getUser error:", authError);
+        return;
+      }
+      const user = authData?.user;
+      if (!user) {
+        console.warn("No authenticated user — skipping workout fetch");
+        return;
+      }
 
-      const { data: plan } = await supabase
-        .from('workouts')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('order_index', { ascending: true });
-      if (plan) setWeeklyPlan(plan);
+      // fetch weekly plan (check error)
+      const { data: plan, error: planError } = await supabase
+        .from("workouts")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("order_index", { ascending: true });
 
-      const { data: workout } = await supabase
-        .from('workouts')
-        .select('id')
-        .eq('user_id', user.id)
+      if (planError) {
+        console.error("Error fetching weekly plan:", planError);
+        setWeeklyPlan([]);
+      } else {
+        setWeeklyPlan(plan || []);
+      }
+
+      // use maybeSingle() to avoid PostgREST 406 when server returns an array
+      const { data: workout, error: workoutError } = await supabase
+        .from("workouts")
+        .select("id")
+        .eq("user_id", user.id)
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (workout) {
+      if (workoutError) {
+        console.error("Error fetching active workout:", workoutError);
+        setActiveWorkoutId(null);
+        setExercises([]);
+        return;
+      }
+
+      if (workout && workout.id) {
         setActiveWorkoutId(workout.id);
-        const { data: exData } = await supabase
-          .from('exercises')
-          .select('*')
-          .eq('workout_id', workout.id)
-          .order('created_at', { ascending: true });
-        if (exData) setExercises(exData);
+        const { data: exData, error: exError } = await supabase
+          .from("exercises")
+          .select("*")
+          .eq("workout_id", workout.id)
+          .order("created_at", { ascending: true });
+
+        if (exError) {
+          console.error("Error fetching exercises:", exError);
+          setExercises([]);
+        } else {
+          setExercises(exData || []);
+        }
+      } else {
+        // no active workout found
+        setActiveWorkoutId(null);
+        setExercises([]);
       }
     } catch (error) {
       console.error("Fetch error:", error);
@@ -105,17 +139,33 @@ export default function Fitness() {
   const toggleExercise = async (id: string, currentStatus: boolean) => {
     setExercises(prev => prev.map(ex => ex.id === id ? { ...ex, completed: !currentStatus } : ex));
     if (!currentStatus) setFocusedExerciseId(null); // Remove focus if completed
-    await supabase.from('exercises').update({ completed: !currentStatus }).eq('id', id);
+    try {
+      const { error } = await supabase.from('exercises').update({ completed: !currentStatus }).eq('id', id);
+      if (error) console.error("Error updating exercise:", error);
+    } catch (err) {
+      console.error("Toggle error:", err);
+    }
   };
 
   const addExercise = async (template: typeof exerciseLibrary[0]) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !activeWorkoutId) return;
-    const { data, error } = await supabase.from('exercises').insert([{ ...template, completed: false, user_id: user.id, workout_id: activeWorkoutId }]).select();
-    if (!error && data) {
-      setExercises(prev => [...prev, ...data]);
-      setIsLogOpen(false);
-      toast({ title: `${template.name} added!` });
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error("Auth getUser error:", authError);
+        return;
+      }
+      const user = authData?.user;
+      if (!user || !activeWorkoutId) return;
+      const { data, error } = await supabase.from('exercises').insert([{ ...template, completed: false, user_id: user.id, workout_id: activeWorkoutId }]).select();
+      if (error) {
+        console.error("Error inserting exercise:", error);
+      } else if (data) {
+        setExercises(prev => [...prev, ...data]);
+        setIsLogOpen(false);
+        toast({ title: `${template.name} added!` });
+      }
+    } catch (err) {
+      console.error("Add exercise error:", err);
     }
   };
 
@@ -123,12 +173,19 @@ export default function Fitness() {
     if (!activeWorkoutId || exercises.length === 0) return;
     const previousExercises = [...exercises];
     setExercises([]);
-    const { error } = await supabase.from('exercises').delete().eq('workout_id', activeWorkoutId);
-    if (error) {
-      toast({ title: "Reset failed", variant: "destructive" });
+    try {
+      const { error } = await supabase.from('exercises').delete().eq('workout_id', activeWorkoutId);
+      if (error) {
+        console.error("Reset delete error:", error);
+        toast({ title: "Reset failed", variant: "destructive" });
+        setExercises(previousExercises);
+      } else {
+        toast({ title: "Workout list cleared" });
+      }
+    } catch (err) {
+      console.error("Reset error:", err);
       setExercises(previousExercises);
-    } else {
-      toast({ title: "Workout list cleared" });
+      toast({ title: "Reset failed", variant: "destructive" });
     }
   };
 
@@ -146,13 +203,23 @@ export default function Fitness() {
   const updateDayWorkout = async (id: string, newName: string) => {
     setWeeklyPlan(prev => prev.map(day => day.id === id ? { ...day, workout_name: newName } : day));
     setEditingDayId(null);
-    await supabase.from('workouts').update({ workout_name: newName } as any).eq('id', id);
-    toast({ title: "Plan updated" });
+    try {
+      const { error } = await supabase.from('workouts').update({ workout_name: newName } as any).eq('id', id);
+      if (error) console.error("Error updating workout name:", error);
+      else toast({ title: "Plan updated" });
+    } catch (err) {
+      console.error("Update day workout error:", err);
+    }
   };
 
   const deleteSingleExercise = async (id: string) => {
     setExercises(prev => prev.filter(ex => ex.id !== id));
-    await supabase.from('exercises').delete().eq('id', id);
+    try {
+      const { error } = await supabase.from('exercises').delete().eq('id', id);
+      if (error) console.error("Error deleting exercise:", error);
+    } catch (err) {
+      console.error("Delete exercise error:", err);
+    }
   };
 
   if (loading) return (
