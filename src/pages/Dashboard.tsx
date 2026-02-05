@@ -38,7 +38,7 @@ interface WaterIntake {
 interface Workout {
   id: string;
   name: string;
-  completed: boolean; // Fixed the missing property error
+  completed: boolean; 
   calories_burned: number;
   duration_minutes: number;
   user_id: string;
@@ -89,7 +89,7 @@ export default function Dashboard() {
           .from('workouts')
           .select('*')
           .eq('user_id', user.id)
-          .returns<Workout[]>() // Explicitly telling TS the shape of our data
+          .returns<Workout[]>() 
       ]);
 
       if(logsResult.error) throw logsResult.error;
@@ -138,7 +138,7 @@ export default function Dashboard() {
       >
         <div>
           <h1 className="text-3xl font-display font-bold mb-1">
-            Welcome back, <span className="gradient-text">{firstName}</span> 💪
+            Welcome back, <span className="gradient-text">{firstName}</span> 
           </h1>
           <p className="text-muted-foreground">
             Track your fitness journey and stay motivated
