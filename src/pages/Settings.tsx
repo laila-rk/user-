@@ -55,8 +55,9 @@ interface NotificationSetting {
   id: string,
   label: string,
   description: string,
-  rowName: string,
+  description: string,
   enabled: boolean
+  rowName: string,
 }
 
 const notificationSettings = [
@@ -278,7 +279,7 @@ const handleToggle = async (rowName: string, enabled: boolean) => {
       setUploading(false);
       return;
     }
-    console.log();
+
 
     const { data } = supabase.storage
       .from("user-images")
@@ -384,7 +385,7 @@ const handleToggle = async (rowName: string, enabled: boolean) => {
       }
 
       const res = await fetch(
-        "https://hbijbzizdllsuqllqidg.functions.supabase.co/delete-account",
+        "https://zoxqjjuokxiyxusqapvv.functions.supabase.co/delete-account",
         {
           method: "POST",
           headers: {
@@ -394,10 +395,11 @@ const handleToggle = async (rowName: string, enabled: boolean) => {
         },
       );
 
+      console.log(res);
+
       const data = await res.json();
 
       if (!res.ok) {
-        console.log(data.error);
         throw new Error(data.error || "Failed to delete account");
       }
 
