@@ -22,20 +22,27 @@ export function UpcomingSessions() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetches sessions all or specifically assigned to any user ID
+      // 1. Fetch sessions 
       const { data, error } = await supabase
         .from("sessions")
         .select(`
           *,
           session_assignments!left(client_id)
         `)
-        .or(`admin_is_mass.eq.true, session_assignments.client_id.eq.${user.id}`)
         .order("start_time", { ascending: true });
 
       if (error) throw error;
+      const visibleSessions = (data || []).filter(session => {
+        const isMass = session.admin_is_mass === true;
+        const isAssigned = session.session_assignments?.some(
+          (a: any) => a.client_id === user.id
+        );
+        return isMass || isAssigned;
+      });
+      const uniqueSessions = Array.from(
+        new Map(visibleSessions.map(s => [s.id, s])).values()
+      ).slice(0, 3);
 
-      // Filter out duplicate session objects 
-      const uniqueSessions = Array.from(new Map(data.map(s => [s.id, s])).values());
       setSessions(uniqueSessions);
 
     } catch (err: any) {
@@ -54,7 +61,6 @@ export function UpcomingSessions() {
       animate={{ opacity: 1, y: 0 }}
       className="bg-card rounded-xl border border-border p-6"
     >
-      {/* Header section  */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <Calendar className="w-5 h-5 text-primary" />
@@ -74,7 +80,6 @@ export function UpcomingSessions() {
           sessions.map((session, index) => {
             const isWhatsApp = session.platform === 'whatsapp';
             
-            // timestamp from the 'start_time' 
             const startTime = session.start_time 
               ? new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               : "TBD";
@@ -119,11 +124,9 @@ export function UpcomingSessions() {
                     if (!link) return toast.error("Meeting link not available yet");
 
                     if (isWhatsApp) {
-                        //  direct WhatsApp redirection
                         const phone = link.replace(/\D/g, '');
                         window.open(`https://wa.me/${phone}`, '_blank');
                     } else {
-                        //  link opens in new tab with proper protocol
                         const url = link.startsWith('http') ? link : `https://${link}`;
                         window.open(url, '_blank');
                     }
