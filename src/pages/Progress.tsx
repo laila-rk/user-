@@ -103,19 +103,21 @@ export default function Progress() {
       if(photosError || !photos || photos.length === 0)
         return;
 
+      // Sorting Photos According to Last Week Available
       const sortedPhotos = [...photos].sort((a, b) => {
         const weekA = a.label.split(' ')[1];
         const weekB = b.label.split(' ')[1];
         return weekA - weekB;
       })
 
-      console.log(photos);
       const lastWeek = sortedPhotos[sortedPhotos.length-1].label.split(' ')[1];
       let newSlots = [...progressPhotos]
 
+      // If Images Present more than Last Week then this function will run
       if(lastWeek > 3){
         const extra = [];
-        for(let i = 4; i <= lastWeek; i++){
+        let i = 4;
+        for(; i <= lastWeek; i++){
           if (!newSlots.find(s => s.date === `Week ${i}`)) {
           extra.push({
             date: `Week ${i}`,
@@ -124,11 +126,10 @@ export default function Progress() {
         }
       }
         newSlots = ([...newSlots, ...extra]);
-        setImageLimit(photos.length);
+        setImageLimit(i-1);
       }
 
-      // console.log(newSlots);
-
+      // If more than 3 Weeks Images Available
       const updatedPhotos = await Promise.all(newSlots.map(async(slot)=>{
         const match = photos.find((p)=> p.label == slot.date)
 
@@ -145,7 +146,6 @@ export default function Progress() {
     )
 
       setProgressPhotos(updatedPhotos);
-      // console.log(updatedPhotos);
     }
     getUserData();
   },[])
@@ -184,8 +184,6 @@ export default function Progress() {
       label: progressPhotos[index].date,
       taken_at: new Date(),
     });
-
-    // console.log("Error while uploading to database", UrlError);
 
     const {data: signed} = await supabase.storage.from('progress-photos').createSignedUrl(filePath, 60*60);
 

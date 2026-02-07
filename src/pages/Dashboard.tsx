@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { 
   Flame, 
   Target, 
@@ -18,8 +18,16 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { NavLink } from "react-router-dom";
+import { Notification } from "@/components/dashboard/Notification";
 
 // --- INTERFACES ---
+
+interface Notifications{
+  id: string;
+  title: "workout" | "diet" | "water" | "live" | "progress" | "fitness";
+  description: string;
+  
+}
 
 interface NutritionLog {
   id: string;
@@ -57,7 +65,8 @@ interface DashboardStats {
 export default function Dashboard() {
   const { user } = useAuth();
   const firstName = user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "there";
-  
+  const [notificationWindow, setNotificationWindow] = useState<boolean>(false);
+  const [notifications, setNotifications] = useState<Notifications[]>([]);
   const [nutritionLogs, setNutritionLogs] = useState<NutritionLog[]>([]);
   const [waterIntake, setWaterIntake] = useState<WaterIntake[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
@@ -72,7 +81,6 @@ export default function Dashboard() {
 
   const fetchUserReport = async() => {
     if(!user) return;
-
     try {
       const [logsResult, waterResult, workoutsResult] = await Promise.all([
         supabase
@@ -144,7 +152,7 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon" className="relative">
+          <Button variant="outline" size="icon" className="relative" onClick={()=>setNotificationWindow(true)}>
             <Bell className="w-5 h-5" />
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full" />
           </Button>
@@ -203,6 +211,11 @@ export default function Dashboard() {
       </div>
 
       <WorkoutProgress />
+      <AnimatePresence>
+        {notificationWindow && (
+          <Notification setNotificationWindow = {setNotificationWindow}/>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

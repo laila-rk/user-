@@ -272,8 +272,14 @@ CREATE TRIGGER update_progress_records_updated_at
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
+  -- Create the Profile
   INSERT INTO public.profiles (user_id, full_name)
   VALUES (NEW.id, NEW.raw_user_meta_data->>'full_name');
+
+  -- Create the Notification Preferences
+  INSERT INTO public.notification_preferences (user_id)
+  VALUES (NEW.id);
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

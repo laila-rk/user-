@@ -94,6 +94,9 @@ export default function Nutrition() {
     if (!user) return;
 
     try {
+      if(nutritionGoals.water.current >= 16){
+        throw new Error("You have consumed Water 2x of Limit, No More!");
+      }
       const { error } = await supabase.from("water_intake").insert({
         user_id: user.id,
         amount_ml: 250,
@@ -104,6 +107,11 @@ export default function Nutrition() {
       fetchData();
       toast({ title: "Water logged!", description: "Keep hydrating! 💧" });
     } catch (error) {
+      toast({
+        title: 'Max Limit Reached',
+        description: error.message,
+        variant: 'destructive'
+      })
       console.error("Error adding water:", error);
     }
   };
@@ -411,6 +419,7 @@ export default function Nutrition() {
             mealType={searchMealType}
             onFoodLogged={fetchData}
             onClose={() => setSearchMealType(null)}
+            nutritionGoals = {nutritionGoals}
           />
         )}
       </AnimatePresence>

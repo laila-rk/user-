@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const achievementsList = [
   { icon: Flame, label: "7-Day Streak", color: "text-orange-500", goal: 7 },
@@ -14,6 +15,7 @@ const achievementsList = [
 
 export default function WorkoutProgress() {
   const { toast } = useToast();
+  const {user} = useAuth();
   const [weeklyData, setWeeklyData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,8 +24,9 @@ export default function WorkoutProgress() {
       const { data } = await supabase
         .from('workouts')
         .select('*')
+        .eq('user_id', user.id)
         .order('order_index', { ascending: true });
-
+      console.log(data);
       if (data) setWeeklyData(data);
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -34,7 +37,6 @@ export default function WorkoutProgress() {
 
   useEffect(() => {
     fetchStats();
-    
     const channel = supabase
       .channel('schema-db-changes-progress')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'workouts' }, fetchStats)
@@ -43,22 +45,22 @@ export default function WorkoutProgress() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const toggleDayStatus = async (id: string, currentStatus: boolean) => {
-    // Optimistic Update
-    setWeeklyData(prev => prev.map(day => 
-      day.id === id ? { ...day, completed: !currentStatus } : day
-    ));
+  // const toggleDayStatus = async (id: string, currentStatus: boolean) => {
+  //   // Optimistic Update
+  //   setWeeklyData(prev => prev.map(day => 
+  //     day.id === id ? { ...day, completed: !currentStatus } : day
+  //   ));
 
-    const { error } = await supabase
-      .from('workouts')
-      .update({ completed: !currentStatus } as any)
-      .eq('id', id);
+  //   const { error } = await supabase
+  //     .from('workouts')
+  //     .update({ completed: !currentStatus } as any)
+  //     .eq('id', id);
 
-    if (error) {
-      toast({ title: "Update Failed", variant: "destructive" });
-      fetchStats(); 
-    }
-  };
+  //   if (error) {
+  //     toast({ title: "Update Failed", variant: "destructive" });
+  //     fetchStats(); 
+  //   }
+  // };
 
   //  Reset All Days Logic
   const resetWeeklyProgress = async () => {
@@ -112,7 +114,7 @@ export default function WorkoutProgress() {
         {weeklyData.map((day, index) => (
           <div key={day.id || index} className="text-center">
             <button
-              onClick={() => toggleDayStatus(day.id, day.completed)}
+              // onClick={() => toggleDayStatus(day.id, day.completed)}
               className={`w-10 h-10 mx-auto rounded-full flex items-center justify-center mb-1.5 transition-all cursor-pointer ${
                 day.completed
                   ? "bg-[#2dd4bf] text-black shadow-[0_0_15px_rgba(45,212,191,0.3)]"

@@ -134,6 +134,7 @@ export default function Fitness() {
             plan = created;
           }
         } else {
+          console.log(plan);
           const mappedPlan = plan.map(p => ({
             ...p,
             workout_name: (p as any).name

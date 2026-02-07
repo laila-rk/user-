@@ -21,13 +21,22 @@ interface Food {
   fiber: number;
 }
 
+interface NutritionGoals {
+ calories: {current: number | null, target: number};
+ protein: {current: number | null, target: number};
+ carbs: {current: number | null, target: number};
+ fats: {current: number | null, target: number};
+ water: {current: number | null, target: number};
+}
+
 interface FoodSearchProps {
   mealType: "breakfast" | "lunch" | "dinner" | "snack";
   onFoodLogged: () => void;
   onClose: () => void;
+  nutritionGoals: NutritionGoals;
 }
 
-export function FoodSearch({ mealType, onFoodLogged, onClose }: FoodSearchProps) {
+export function FoodSearch({ mealType, onFoodLogged, onClose, nutritionGoals }: FoodSearchProps) {
   const [query, setQuery] = useState("");
   const [foods, setFoods] = useState<Food[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -83,6 +92,15 @@ export function FoodSearch({ mealType, onFoodLogged, onClose }: FoodSearchProps)
 
     setIsLogging(food.id);
     try {
+      if(nutritionGoals.calories.current >= nutritionGoals.calories.target * 2){
+        toast({
+          title: 'Max Calories Reached',
+          description: 'You have consumed max of your calories',
+          variant: 'destructive'
+        })
+        return;
+      }
+
       const { error } = await supabase.from("nutrition_logs").insert({
         user_id: user.id,
         meal_type: mealType,
