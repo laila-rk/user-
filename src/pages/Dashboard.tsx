@@ -22,11 +22,11 @@ import { Notification } from "@/components/dashboard/Notification";
 
 // --- INTERFACES ---
 
-interface Notifications{
+interface Notifications {
   id: string;
-  title: "workout" | "diet" | "water" | "live" | "progress" | "fitness";
+  title: string;
   description: string;
-  
+  is_completed?: boolean;
 }
 
 interface NutritionLog {
@@ -78,6 +78,98 @@ export default function Dashboard() {
   });
 
   const today = new Date().toISOString().split('T')[0];
+
+  const fetchNotifications = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Fetch notifications error:", error);
+      return;
+    }
+
+    setNotifications(data || []);
+  };
+
+
+  const fetchDailyNotifications = async () => {
+    const { data: existing, error: checkError } = await supabase
+      .from("notifications")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("notification_date", today)
+      .limit(1);
+
+      if (checkError) {
+        console.error("Check error:", checkError);
+        return;
+      }
+
+      if (existing && existing.length > 0) return;
+
+      const { data: prefs, error: prefError } = await supabase
+        .from("notification_preferences")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (prefError) {
+        console.error("Preference fetch error:", prefError);
+        return;
+      }
+      const notificationsToInsert: any[] = [];
+
+      if (prefs.workout_reminders) {
+        notificationsToInsert.push({
+          user_id: user.id,
+          title: "Workout Reminder",
+          description: "Complete your workout today 💪",
+          notification_date: today,
+        });
+      }
+
+      if (prefs.diet_meal_reminders) {
+        notificationsToInsert.push({
+          user_id: user.id,
+          title: "Nutrition Reminder",
+          description: "Track your meals today 🥗",
+          notification_date: today,
+        });
+      }
+
+      if (prefs.water_intake_alerts) {
+        notificationsToInsert.push({
+          user_id: user.id,
+          title: "Water Intake",
+          description: "Stay hydrated and meet your goal 🚰",
+          notification_date: today,
+        });
+      }
+
+      if (prefs.live_session_alerts) {
+        notificationsToInsert.push({
+          user_id: user.id,
+          title: "Live Session",
+          description: "Check today’s live training session 🎯",
+          notification_date: today,
+        });
+      }
+
+      if (notificationsToInsert.length > 0) {
+        const { error: insertError } = await supabase
+          .from("notifications")
+          .insert(notificationsToInsert);
+
+        if (insertError) {
+          console.error("Insert error:", insertError);
+        }
+      }
+  }
 
   const fetchUserReport = async() => {
     if(!user) return;
@@ -133,6 +225,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchUserReport();
+    fetchDailyNotifications();
+    fetchNotifications();
   }, [user, today]);
 
   return (
@@ -213,7 +307,8 @@ export default function Dashboard() {
       <WorkoutProgress />
       <AnimatePresence>
         {notificationWindow && (
-          <Notification setNotificationWindow = {setNotificationWindow}/>
+          <Notification  setNotificationWindow={setNotificationWindow}
+  notifications={notifications}/>
         )}
       </AnimatePresence>
     </div>

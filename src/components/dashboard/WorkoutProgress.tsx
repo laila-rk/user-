@@ -26,7 +26,6 @@ export default function WorkoutProgress() {
         .select('*')
         .eq('user_id', user.id)
         .order('order_index', { ascending: true });
-      console.log(data);
       if (data) setWeeklyData(data);
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -44,23 +43,6 @@ export default function WorkoutProgress() {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
-
-  // const toggleDayStatus = async (id: string, currentStatus: boolean) => {
-  //   // Optimistic Update
-  //   setWeeklyData(prev => prev.map(day => 
-  //     day.id === id ? { ...day, completed: !currentStatus } : day
-  //   ));
-
-  //   const { error } = await supabase
-  //     .from('workouts')
-  //     .update({ completed: !currentStatus } as any)
-  //     .eq('id', id);
-
-  //   if (error) {
-  //     toast({ title: "Update Failed", variant: "destructive" });
-  //     fetchStats(); 
-  //   }
-  // };
 
   //  Reset All Days Logic
   const resetWeeklyProgress = async () => {
