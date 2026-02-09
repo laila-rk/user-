@@ -12,29 +12,10 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [show, setShow] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+//   const [isReady, setIsReady] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-
-      if (data.session) {
-        setIsReady(true);
-      } else {
-        toast({
-          title: "Invalid or expired link",
-          description: "Please request a new password reset link.",
-          variant: "destructive",
-        });
-        navigate("/auth");
-      }
-    };
-
-    checkSession();
-  }, []);
 
   const handleUpdatePassword = async () => {
     if (password.length < 6) {
@@ -77,14 +58,6 @@ const ResetPassword = () => {
       navigate("/auth");
     }
   };
-
-  if (!isReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Checking reset link...
-      </div>
-    );
-  }
 
   return (
     <section className="min-h-screen flex items-center justify-center p-4 bg-background">
