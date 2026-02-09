@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import FitnessAppFlow from "./components/dashboard/LoginQuestionare";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path = '/reset-password' element = {<ResetPassword/>} />
             {/* Need Reviews */}
             <Route path = '/fitnessFlow' element = {<FitnessAppFlow/>}/>
             <Route

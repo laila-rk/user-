@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import LogoImage from '../assets/logo.png'
+import { supabase } from "@/integrations/supabase/client";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -130,6 +131,38 @@ export default function Auth() {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!email) {
+      toast({
+        title: "Enter email",
+        description: "Please enter your email first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + "/reset-password",
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Reset link sent",
+        description: "Check your email to continue",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <motion.div
@@ -193,7 +226,14 @@ export default function Auth() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex justify-between">
+                <Label htmlFor="password">Password</Label>
+                <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    className="text-sm text-primary hover:underline"
+                  >Reset Password</button>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
