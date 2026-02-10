@@ -87,13 +87,14 @@ export default function Dashboard() {
       .from("notifications")
       .select("*")
       .eq("user_id", user.id)
+      .eq('notification_date', today)
       .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Fetch notifications error:", error);
       return;
     }
-
+    console.log(data);
     setNotifications(data || []);
   };
 
@@ -110,7 +111,9 @@ export default function Dashboard() {
         return;
       }
 
-      if (existing && existing.length > 0) return;
+      if (existing && existing.length > 0){
+        return;
+      } 
 
       const { data: prefs, error: prefError } = await supabase
         .from("notification_preferences")

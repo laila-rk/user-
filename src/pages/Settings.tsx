@@ -537,13 +537,13 @@ const handleToggle = async (rowName: string, enabled: boolean) => {
             <Bell className="w-4 h-4 mr-2" />
             Notifications
           </TabsTrigger>
-          <TabsTrigger
+          {/* <TabsTrigger
             value="privacy"
             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
             <Shield className="w-4 h-4 mr-2" />
             Privacy
-          </TabsTrigger>
+          </TabsTrigger> */}
           <TabsTrigger
             value="security"
             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
