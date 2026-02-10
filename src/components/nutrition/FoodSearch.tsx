@@ -186,4 +186,3 @@ export function FoodSearch({ mealType, onFoodLogged, onClose, nutritionGoals }: 
     </div>
   );
 }
-//w...
