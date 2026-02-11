@@ -63,9 +63,51 @@ export default function Auth() {
 
     try {
       if (isLogin) {
+        if(email === ""){
+          if(password === ""){
+            toast({
+              title: "Login Failed",
+              description: "Enter Valid Email and Password",
+              variant: "destructive"
+            })
+            return;
+          }
+          toast({
+            title: "Login Failed",
+            description: "Enter Valid Email",
+            variant: "destructive"
+          });
+          return;
+        }
+        if(password === ""){
+          toast({
+            title: "Please Enter Correct Password",
+            description: "Password should not be empty",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if(!emailRegex.test(email)){
+          toast({
+            title: "Sign Up Failed",
+            description: "Please Input Correct Email",
+            variant: "destructive",
+          });
+          return;
+        }
+        else if(!passwordRegex.test(password)){
+          toast({
+            title: "Please enter correct password",
+            description: "Password should be 6-12 characters",
+            variant: "destructive",
+          });
+          return;
+        }
+
         const { error } = await signIn(email, password);
         if (error) {
-          if (error.message.includes("Invalid login credentials")) {
+          if(error.message.includes("Invalid login credentials")) {
             toast({
               title: "Login failed",
               description: "Invalid email or password. Please try again.",
@@ -79,20 +121,19 @@ export default function Auth() {
             });
           }
         } else {
+          navigate("/post-measurement");
           toast({
             title: "Welcome back!",
             description: "You have successfully logged in.",
           });
-          navigate("/post-measurement");
         }
       } else {
-
         if(fullName === "")
         {
           if(email === ""){
             if(password === ""){
               toast({
-                title: "Sign Up Failed",
+                title: "Full Name Error",
                 description: "Enter Valid input all field.",
                 variant: "destructive",
               })
@@ -123,7 +164,7 @@ export default function Auth() {
             return;
           }
           toast({
-            title: 'Sign Up Failed',
+            title: 'Full Name Error',
             description: "Special Characters or Numbers are not allowed",
             variant: 'destructive'
           })
@@ -140,8 +181,8 @@ export default function Auth() {
         }
         if (!passwordRegex.test(password)) {
           toast({
-            title: "Sign Up Failed",
-            description: "Password should be 6-12 characters.",
+            title: "Please enter correct password",
+            description: "Password should be 6-12 characters",
             variant: "destructive",
           });
           return;
