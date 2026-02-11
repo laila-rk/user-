@@ -60,13 +60,13 @@ interface NotificationSetting {
 }
 
 const notificationSettings = [
-  {
-    id: "workout",
-    label: "Workout Reminders",
-    description: "Get reminded about scheduled workouts",
-    enabled: true,
-    rowName: "workout_reminders",
-  },
+  // {
+  //   id: "workout",
+  //   label: "Workout Reminders",
+  //   description: "Get reminded about scheduled workouts",
+  //   enabled: true,
+  //   rowName: "workout_reminders",
+  // },
   {
     id: "diet",
     label: "Diet & Meal Reminders",
@@ -74,13 +74,13 @@ const notificationSettings = [
     enabled: true,
     rowName: "diet_meal_reminders",
   },
-  {
-    id: "water",
-    label: "Water Intake Alerts",
-    description: "Hourly hydration reminders",
-    enabled: true,
-    rowName: "water_intake_alerts",
-  },
+  // {
+  //   id: "water",
+  //   label: "Water Intake Alerts",
+  //   description: "Hourly hydration reminders",
+  //   enabled: true,
+  //   rowName: "water_intake_alerts",
+  // },
   {
     id: "sessions",
     label: "Live Session Alerts",
@@ -88,20 +88,20 @@ const notificationSettings = [
     enabled: true,
     rowName: "live_session_alerts",
   },
-  {
-    id: "progress",
-    label: "Progress Updates",
-    description: "Weekly progress summaries",
-    enabled: true,
-    rowName: "progress_updates",
-  },
-  {
-    id: "tips",
-    label: "Fitness Tips",
-    description: "Daily motivation and tips",
-    enabled: true,
-    rowName: "fitness_tips",
-  },
+  // {
+  //   id: "progress",
+  //   label: "Progress Updates",
+  //   description: "Weekly progress summaries",
+  //   enabled: true,
+  //   rowName: "progress_updates",
+  // },
+  // {
+  //   id: "tips",
+  //   label: "Fitness Tips",
+  //   description: "Daily motivation and tips",
+  //   enabled: true,
+  //   rowName: "fitness_tips",
+  // },
 ];
 
 const privacySettings = [

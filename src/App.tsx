@@ -33,8 +33,6 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            {/* Need Reviews */}
-            <Route path="/fitnessFlow" element={<FitnessAppFlow />} />
             <Route path="/pre-measurement" element={<PreQuestion />} />
             <Route path = '/post-measurement' element = {<PostQuestion/>} />
             <Route

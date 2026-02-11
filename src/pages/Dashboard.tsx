@@ -126,14 +126,14 @@ export default function Dashboard() {
       }
       const notificationsToInsert: any[] = [];
 
-      if (prefs.workout_reminders) {
-        notificationsToInsert.push({
-          user_id: user.id,
-          title: "Workout Reminder",
-          description: "Complete your workout today 💪",
-          notification_date: today,
-        });
-      }
+      // if (prefs.workout_reminders) {
+      //   notificationsToInsert.push({
+      //     user_id: user.id,
+      //     title: "Workout Reminder",
+      //     description: "Complete your workout today 💪",
+      //     notification_date: today,
+      //   });
+      // }
 
       if (prefs.diet_meal_reminders) {
         notificationsToInsert.push({
@@ -144,14 +144,14 @@ export default function Dashboard() {
         });
       }
 
-      if (prefs.water_intake_alerts) {
-        notificationsToInsert.push({
-          user_id: user.id,
-          title: "Water Intake",
-          description: "Stay hydrated and meet your goal 🚰",
-          notification_date: today,
-        });
-      }
+      // if (prefs.water_intake_alerts) {
+      //   notificationsToInsert.push({
+      //     user_id: user.id,
+      //     title: "Water Intake",
+      //     description: "Stay hydrated and meet your goal 🚰",
+      //     notification_date: today,
+      //   });
+      // }
 
       if (prefs.live_session_alerts) {
         notificationsToInsert.push({

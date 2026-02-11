@@ -581,12 +581,12 @@ export default function Progress() {
             Visualize your fitness journey and celebrate your wins
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        {/* <div className="flex items-center gap-3">
           <Button variant="outline">
             <Calendar className="w-4 h-4 mr-2" />
             Date Range
           </Button>
-        </div>
+        </div> */}
       </motion.div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
