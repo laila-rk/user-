@@ -26,17 +26,92 @@ export default function PostQuestion() {
 
   // Validation limits for each field (same as PreQuestion)
   const validationRules = {
-    weight_kg: { min: 30, max: 200, label: "Weight" },
-    height_cm: { min: 50, max: 200, label: "Height" },
-    chest_cm: { min: 50, max: 200, label: "Chest" },
-    waist_cm: { min: 40, max: 200, label: "Waist" },
-    hips_cm: { min: 50, max: 200, label: "Hips" },
-    arms_cm: { min: 15, max: 100, label: "Arms" },
-    thighs_cm: { min: 30, max: 150, label: "Thighs" },
+    weight_kg: {
+      min: 30,
+      max: 200,
+      label: "Weight",
+      maxDecimals: 2,
+      maxDigits: 3,
+    },
+    height_cm: {
+      min: 50,
+      max: 200,
+      label: "Height",
+      maxDecimals: 2,
+      maxDigits: 3,
+    },
+    chest_cm: {
+      min: 50,
+      max: 200,
+      label: "Chest",
+      maxDecimals: 2,
+      maxDigits: 3,
+    },
+    waist_cm: {
+      min: 40,
+      max: 200,
+      label: "Waist",
+      maxDecimals: 2,
+      maxDigits: 3,
+    },
+    hips_cm: { min: 50, max: 200, label: "Hips", maxDecimals: 2, maxDigits: 3 },
+    arms_cm: { min: 15, max: 100, label: "Arms", maxDecimals: 2, maxDigits: 3 },
+    thighs_cm: {
+      min: 30,
+      max: 150,
+      label: "Thighs",
+      maxDecimals: 2,
+      maxDigits: 3,
+    },
   };
 
   const handleChange = (field, value) => {
     const sanitized = value.replace(/[^0-9.]/g, "");
+
+    const decimalCount = (sanitized.match(/\./g) || []).length;
+    if (decimalCount > 1) {
+      toast({
+        title: "Invalid Input",
+        description: "Only one decimal point is allowed",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const parts = sanitized.split(".");
+    const beforeDecimal = parts[0];
+
+    if (beforeDecimal.length > validationRules[field].maxDigits) {
+      toast({
+        title: "Invalid Input",
+        description: `Maximum ${validationRules[field].maxDigits} digits allowed before decimal`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (parts.length === 2) {
+      const afterDecimal = parts[1];
+      const maxDecimals = validationRules[field].maxDecimals;
+
+      if (afterDecimal.length > maxDecimals) {
+        if (maxDecimals === 0) {
+          toast({
+            title: "Invalid Input",
+            description: `${validationRules[field].label} cannot have decimal values`,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Invalid Input",
+            description: `Maximum ${maxDecimals} digits allowed after decimal`,
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+    }
+
     setMeasurements({ ...measurements, [field]: sanitized });
   };
 
@@ -61,13 +136,34 @@ export default function PostQuestion() {
         // Pre-populate fields with previous measurements if they exist
         if (previousMeasurement) {
           setMeasurements({
-            weight_kg: previousMeasurement.weight_kg?.toString() || "",
-            height_cm: previousMeasurement.height_cm?.toString() || "",
-            chest_cm: previousMeasurement.chest_cm?.toString() || "",
-            waist_cm: previousMeasurement.waist_cm?.toString() || "",
-            hips_cm: previousMeasurement.hips_cm?.toString() || "",
-            arms_cm: previousMeasurement.arms_cm?.toString() || "",
-            thighs_cm: previousMeasurement.thighs_cm?.toString() || "",
+            weight_kg:
+              previousMeasurement.weight_kg !== 500
+                ? previousMeasurement.weight_kg.toString()
+                : "",
+            height_cm:
+              previousMeasurement.height_cm !== 500
+                ? previousMeasurement.height_cm.toString()
+                : "",
+            chest_cm:
+              previousMeasurement.chest_cm !== 500
+                ? previousMeasurement.chest_cm.toString()
+                : "",
+            waist_cm:
+              previousMeasurement.waist_cm !== 500
+                ? previousMeasurement.waist_cm.toString()
+                : "",
+            hips_cm:
+              previousMeasurement.hips_cm !== 500
+                ? previousMeasurement.hips_cm.toString()
+                : "",
+            arms_cm:
+              previousMeasurement.arms_cm !== 500
+                ? previousMeasurement.arms_cm.toString()
+                : "",
+            thighs_cm:
+              previousMeasurement.thighs_cm !== 500
+                ? previousMeasurement.thighs_cm.toString()
+                : "",
           });
         }
       } catch (error) {
@@ -146,33 +242,73 @@ export default function PostQuestion() {
         console.error("Error fetching previous measurements:", fetchError);
       }
 
+      // Fetch starting measurements to check which fields need to be updated
+      const { data: startingMeasurement, error: startingFetchError } =
+        await supabase
+          .from("starting_measurements")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+      if (startingFetchError && startingFetchError.code !== "PGRST116") {
+        console.error(
+          "Error fetching starting measurements:",
+          startingFetchError,
+        );
+      }
+
       const newMeasurement = {
         user_id: user.id,
         weight_kg: measurements.weight_kg
           ? Number(measurements.weight_kg)
-          : previousMeasurement?.weight_kg || null,
+          : previousMeasurement?.weight_kg || 500,
         height_cm: measurements.height_cm
           ? Number(measurements.height_cm)
-          : previousMeasurement?.height_cm || null,
+          : previousMeasurement?.height_cm || 500,
         chest_cm: measurements.chest_cm
           ? Number(measurements.chest_cm)
-          : previousMeasurement?.chest_cm || null,
+          : previousMeasurement?.chest_cm || 500,
         waist_cm: measurements.waist_cm
           ? Number(measurements.waist_cm)
-          : previousMeasurement?.waist_cm || null,
+          : previousMeasurement?.waist_cm || 500,
         hips_cm: measurements.hips_cm
           ? Number(measurements.hips_cm)
-          : previousMeasurement?.hips_cm || null,
+          : previousMeasurement?.hips_cm || 500,
         arms_cm: measurements.arms_cm
           ? Number(measurements.arms_cm)
-          : previousMeasurement?.arms_cm || null,
+          : previousMeasurement?.arms_cm || 500,
         thighs_cm: measurements.thighs_cm
           ? Number(measurements.thighs_cm)
-          : previousMeasurement?.thighs_cm || null,
-        age: previousMeasurement?.age || null,
+          : previousMeasurement?.thighs_cm || 500,
+        age: previousMeasurement?.age || 500,
       };
 
-      // Insert the new measurement
+      // Determine which fields to update in starting_measurements
+      // Only update if the previous value was 500 and new value is not 500
+      const startingUpdates = {};
+      const measurementFields = [
+        "weight_kg",
+        "height_cm",
+        "chest_cm",
+        "waist_cm",
+        "hips_cm",
+        "arms_cm",
+        "thighs_cm",
+      ];
+
+      measurementFields.forEach((field) => {
+        const previousValue = previousMeasurement?.[field] || 500;
+        const newValue = newMeasurement[field];
+
+        // If this is the first time a real value (not 500) is being entered
+        if (previousValue === 500 && newValue !== 500) {
+          startingUpdates[field] = newValue;
+        }
+      });
+
+      // Insert the new measurement into current_measurements
       const { error: insertError } = await supabase
         .from("current_measurements")
         .insert([newMeasurement]);
@@ -184,6 +320,47 @@ export default function PostQuestion() {
           variant: "destructive",
         });
         return;
+      }
+
+      // Update starting_measurements if there are fields to update
+      if (Object.keys(startingUpdates).length > 0) {
+        if (startingMeasurement) {
+          // Update existing starting measurement
+          const { error: updateError } = await supabase
+            .from("starting_measurements")
+            .update(startingUpdates)
+            .eq("user_id", user.id)
+            .eq("id", startingMeasurement.id);
+
+          if (updateError) {
+            console.error("Error updating starting measurements:", updateError);
+          }
+        } else {
+          // Create new starting measurement with all values
+          const newStartingMeasurement = {
+            user_id: user.id,
+            ...startingUpdates,
+            // Fill remaining fields with 500 if not in updates
+            ...measurementFields.reduce((acc, field) => {
+              if (!startingUpdates[field]) {
+                acc[field] = 500;
+              }
+              return acc;
+            }, {}),
+            age: 500,
+          };
+
+          const { error: insertStartingError } = await supabase
+            .from("starting_measurements")
+            .insert([newStartingMeasurement]);
+
+          if (insertStartingError) {
+            console.error(
+              "Error inserting starting measurements:",
+              insertStartingError,
+            );
+          }
+        }
       }
 
       toast({ description: "Measurements saved successfully!" });

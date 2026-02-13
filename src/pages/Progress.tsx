@@ -124,7 +124,7 @@ export default function Progress() {
             .eq("user_id", user.id)
             .order("created_at", { ascending: true });
 
-        console.log(allMeasurements);
+        const {data: initialMeasurements, error: initialError} = await supabase.from('starting_measurements').select('*').eq('user_id', user.id);
 
         // Fetch gender and age from profile
         const { data: profileData, error: profileError } = await supabase
@@ -145,7 +145,7 @@ export default function Progress() {
         }
 
         // Get starting (first) and current (last) measurements
-        const startingMeasurement = allMeasurements[0];
+        const startingMeasurement = initialMeasurements[0];
         const currentMeasurement = allMeasurements[allMeasurements.length - 1];
 
         // Calculate Body Fat Percentage
@@ -299,7 +299,6 @@ export default function Progress() {
                 completedExercisesCount = exercises.filter(
                   (ex: any) => ex.completed,
                 ).length;
-                // Estimate calories: ~20 calories per completed exercise
                 estimatedCalories = completedExercisesCount * 20;
               }
             }

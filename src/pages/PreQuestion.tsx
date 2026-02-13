@@ -69,7 +69,6 @@ export default function PreQuestion() {
     // Only allow numbers and one decimal point
     const sanitized = value.replace(/[^0-9.]/g, "");
 
-    // Check for multiple decimal points (Row 37: only one decimal accepted)
     const decimalCount = (sanitized.match(/\./g) || []).length;
     if (decimalCount > 1) {
       toast({
@@ -80,7 +79,7 @@ export default function PreQuestion() {
       return;
     }
 
-    // Row 35: Maximum 3 digits before decimal
+    
     const parts = sanitized.split(".");
     const beforeDecimal = parts[0];
 
@@ -93,7 +92,6 @@ export default function PreQuestion() {
       return;
     }
 
-    // Row 36: Maximum 2 digits after decimal (except age which is 0)
     if (parts.length === 2) {
       const afterDecimal = parts[1];
       const maxDecimals = validationRules[field].maxDecimals;
@@ -135,7 +133,7 @@ export default function PreQuestion() {
       if (!measurements[field] || measurements[field] === "") {
         toast({
           title: "Validation Error",
-          description: `${validationRules[field].label} is required`,
+          description: "Please Input Data in Mandatory Field",
           variant: "destructive",
         });
         return false;
@@ -151,11 +149,7 @@ export default function PreQuestion() {
 
       const numValue = Number(value);
       const rules = validationRules[field];
-
-      // Row 27, 28, 29: Zero value check (though we accept 0)
-      // Based on the sheet, zero values are accepted, so we skip this
-
-      // Row 33, 34: Min/Max validation
+      
       if (numValue < rules.min) {
         toast({
           title: "Validation Error",
@@ -215,15 +209,15 @@ export default function PreQuestion() {
           height_cm: Number(measurements.height_cm),
           chest_cm: measurements.chest_cm
             ? Number(measurements.chest_cm)
-            : null,
+            : 500,
           waist_cm: measurements.waist_cm
             ? Number(measurements.waist_cm)
-            : null,
-          hips_cm: measurements.hips_cm ? Number(measurements.hips_cm) : null,
-          arms_cm: measurements.arms_cm ? Number(measurements.arms_cm) : null,
+            : 500,
+          hips_cm: measurements.hips_cm ? Number(measurements.hips_cm) : 500,
+          arms_cm: measurements.arms_cm ? Number(measurements.arms_cm) : 500,
           thighs_cm: measurements.thighs_cm
             ? Number(measurements.thighs_cm)
-            : null,
+            : 500,
           age: Number(measurements.age),
         },
       ]);
@@ -237,15 +231,15 @@ export default function PreQuestion() {
           height_cm: Number(measurements.height_cm),
           chest_cm: measurements.chest_cm
             ? Number(measurements.chest_cm)
-            : null,
+            : 500,
           waist_cm: measurements.waist_cm
             ? Number(measurements.waist_cm)
-            : null,
-          hips_cm: measurements.hips_cm ? Number(measurements.hips_cm) : null,
-          arms_cm: measurements.arms_cm ? Number(measurements.arms_cm) : null,
+            : 500,
+          hips_cm: measurements.hips_cm ? Number(measurements.hips_cm) : 500,
+          arms_cm: measurements.arms_cm ? Number(measurements.arms_cm) : 500,
           thighs_cm: measurements.thighs_cm
             ? Number(measurements.thighs_cm)
-            : null,
+            : 500,
           age: Number(measurements.age),
         },
       ]);
