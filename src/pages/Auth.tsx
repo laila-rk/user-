@@ -232,7 +232,6 @@ export default function Auth() {
   };
 
   const handleFullName = (e) => {
-    console.log(e.target.value);
     if(e.target.value.length > 40){
       toast({
         title: "Full Name Error",
