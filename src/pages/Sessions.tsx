@@ -26,8 +26,10 @@ export default function Sessions() {
 
   useEffect(() => {
     fetchSessions();
+
+   
     const channel = supabase
-      .channel('schema-db-changes')
+      .channel('session-updates')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'sessions' }, 
         () => fetchSessions() 
@@ -51,6 +53,7 @@ export default function Sessions() {
       console.log(user.id);
       if (!user) return;
 
+
       const { data, error } = await supabase
         .from("sessions")
         .select(`
@@ -61,12 +64,11 @@ export default function Sessions() {
 
       if (error) throw error;
       const visibleSessions = (data || []).filter(session => {
-        const isMass = session.admin_is_mass === true;
+
         const isAssigned = session.session_assignments?.some(
           (a: any) => String(a.client_id) === String(user.id)
         );
-        console.log(isAssigned);
-        return isMass || isAssigned;
+        
       });
 
       console.log(visibleSessions);
@@ -80,7 +82,6 @@ export default function Sessions() {
     }
   };
 
-  // ATTENDANCE RECORD
   const handleSessionJoin = async (session: any) => {
     const link = session.meeting_link;
     if (!link) {
@@ -91,6 +92,7 @@ export default function Sessions() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
+        // Upsert assignment as a way of tracking attendance
         const { error } = await supabase
           .from("session_assignments")
           .upsert({ 
@@ -101,7 +103,7 @@ export default function Sessions() {
         if (error) console.error("Database sync error:", error.message);
       }
 
-      // Open the session link
+      // Open link securely
       window.open(link.startsWith('http') ? link : `https://${link}`, '_blank');
       toast.success("Joining session...");
 
