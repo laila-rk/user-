@@ -26,7 +26,7 @@ export default function Auth() {
   const { user, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const fullNameRegex = /^(?=.{1,40}$)[A-Za-z]+( [A-Za-z]+)*$/;
+  const fullNameRegex = /^[a-zA-Z]+(?:\s[a-zA-Z]+)*$/;
   const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
   const passwordRegex = /^.{6,12}$/
 
@@ -232,14 +232,18 @@ export default function Auth() {
   };
 
   const handleFullName = (e) => {
-    if(e.target.value.length > 40){
-      toast({
-        title: "Full Name Error",
-        description: "Max Limit is 40",
-        variant: 'destructive'
-      })
+    if (e.target.value === ""){
+      setFullName("");
       return;
     }
+      if (e.target.value.length > 40) {
+        toast({
+          title: "Full Name Error",
+          description: "Max Limit is 40",
+          variant: "destructive",
+        });
+        return;
+      }
 
     if(!fullNameRegex.test(e.target.value)){
       toast({

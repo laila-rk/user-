@@ -47,10 +47,10 @@ export default function Sessions() {
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-
+      
+      console.log(user.id);
       if (!user) return;
 
-     
       const { data, error } = await supabase
         .from("sessions")
         .select(`
@@ -60,18 +60,16 @@ export default function Sessions() {
         .order("id", { ascending: false });
 
       if (error) throw error;
-
       const visibleSessions = (data || []).filter(session => {
-        
         const isMass = session.admin_is_mass === true;
-        
-    
         const isAssigned = session.session_assignments?.some(
           (a: any) => String(a.client_id) === String(user.id)
         );
-
+        console.log(isAssigned);
         return isMass || isAssigned;
       });
+
+      console.log(visibleSessions);
 
       setSessions(visibleSessions);
     } catch (err: any) {
@@ -113,10 +111,31 @@ export default function Sessions() {
     }
   };
 
-  const filteredSessions = sessions.filter(s => 
-    (s.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (s.instructor || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredSessions = sessions
+    .filter(
+      (s) =>
+        (s.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (s.instructor || "").toLowerCase().includes(searchQuery.toLowerCase()),
+    )
+    .map((s) => {
+      const now = new Date();
+      const scheduled = new Date(s.scheduled_at);
+      const endTime = new Date(scheduled.getTime() + 45 * 60 * 1000);
+
+      const isSameDay =
+        now.getFullYear() === scheduled.getFullYear() &&
+        now.getMonth() === scheduled.getMonth() &&
+        now.getDate() === scheduled.getDate();
+
+      const isLiveTime = now >= scheduled && now <= endTime;
+      return {
+        ...s, 
+        isLiveAvailable: isSameDay && isLiveTime,
+        endTime,
+      };
+    })
+    .filter((s) => new Date() <= s.endTime) 
+    .map(({ endTime, ...s }) => s); 
 
   const liveSessions = filteredSessions.filter(s => s.type === 'live');
   const recordedSessions = filteredSessions.filter(s => s.type === 'recorded' || !s.type);
@@ -140,23 +159,29 @@ export default function Sessions() {
               className="pl-10 w-64 bg-muted border-border"
             />
           </div>
-          <Button 
-            variant="outline" 
-            size="icon" 
+          <Button
+            variant="outline"
+            size="icon"
             onClick={fetchSessions}
             className={loading ? "opacity-50" : ""}
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
       </div>
 
       <Tabs defaultValue="live" className="space-y-6">
         <TabsList className="bg-muted p-1">
-          <TabsTrigger value="live" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+          <TabsTrigger
+            value="live"
+            className="data-[state=active]:bg-primary data-[state=active]:text-white"
+          >
             <Video className="w-4 h-4 mr-2" /> Live Sessions
           </TabsTrigger>
-          <TabsTrigger value="recorded" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+          <TabsTrigger
+            value="recorded"
+            className="data-[state=active]:bg-primary data-[state=active]:text-white"
+          >
             <Play className="w-4 h-4 mr-2" /> Recorded Library
           </TabsTrigger>
         </TabsList>
@@ -176,17 +201,17 @@ export default function Sessions() {
                   </div>
                 ) : (
                   liveSessions.map((session) => (
-                    <motion.div 
+                    <motion.div
                       layout
-                      initial={{ opacity: 0, y: 10 }} 
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      key={session.id} 
+                      key={session.id}
                       className="bg-card border border-border rounded-xl p-6 flex flex-col md:flex-row md:items-center gap-6 hover:border-primary/20 transition-all shadow-sm"
                     >
                       <Avatar className="w-20 h-20 border-2 border-primary/10">
                         <AvatarImage src={session.trainer_image} />
                         <AvatarFallback className="bg-primary/5 text-primary text-xl font-bold">
-                          {session.instructor?.[0] || 'S'}
+                          {session.instructor?.[0] || "S"}
                         </AvatarFallback>
                       </Avatar>
 
@@ -194,58 +219,82 @@ export default function Sessions() {
                         <div className="flex items-center gap-3">
                           <h3 className="font-bold text-xl">{session.title}</h3>
                           {!session.admin_is_mass && (
-                            <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-none text-[10px] flex gap-1">
+                            <Badge
+                              variant="secondary"
+                              className="bg-blue-500/10 text-blue-600 border-none text-[10px] flex gap-1"
+                            >
                               <UserCheck className="w-3 h-3" /> PERSONAL
                             </Badge>
                           )}
-                          <Badge className={`${session.meeting_link ? 'bg-green-500/10 text-green-500' : 'bg-orange-500/10 text-orange-500'} border-none animate-pulse`}>
-                            {session.meeting_link ? 'LIVE' : 'PREPARING'}
+                          <Badge
+                            className={`${session.isLiveAvailable ? "bg-green-500/10 text-green-500" : "bg-orange-500/10 text-orange-500"} border-none animate-pulse`}
+                          >
+                            {session.isLiveAvailable ? "LIVE" : "UPCOMING"}
                           </Badge>
                         </div>
-                        <p className="text-muted-foreground">Coach {session.instructor || 'Staff'}</p>
+                        <p className="text-muted-foreground">
+                          Coach {session.instructor || "Staff"}
+                        </p>
                       </div>
 
                       <div className="flex flex-col items-end gap-2">
-                         <span className="text-sm font-medium text-primary flex items-center gap-1">
-                           <Clock className="w-4 h-4" /> {session.duration || '45'}m
-                         </span>
-                         
-                         <Button 
-                           variant={session.meeting_link ? "default" : "outline"}
-                           className={session.meeting_link ? "bg-primary hover:bg-primary/90" : "opacity-60 cursor-not-allowed"}
-                           onClick={() => handleSessionJoin(session)}
-                         >
-                           {session.meeting_link ? "Join Session" : "Coming Soon"} 
-                           <ChevronRight className="w-4 h-4 ml-2" />
-                         </Button>
+                        <span className="text-sm font-medium text-primary flex items-center gap-1">
+                          {/* <span>{session.scheduled_at.split("T")[0]}</span> */}
+                          <Clock className="w-4 h-4" />{" "}
+                          {session.duration || "45"}m
+                        </span>
+
+                        <Button
+                          variant={session.meeting_link ? "default" : "outline"}
+                          className={
+                            session.meeting_link
+                              ? "bg-primary hover:bg-primary/90"
+                              : "opacity-60 cursor-not-allowed"
+                          }
+                          onClick={() => handleSessionJoin(session)}
+                        >
+                          {session.meeting_link
+                            ? "Join Session"
+                            : "Coming Soon"}
+                          <ChevronRight className="w-4 h-4 ml-2" />
+                        </Button>
                       </div>
                     </motion.div>
                   ))
                 )}
               </TabsContent>
 
-              <TabsContent value="recorded" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 outline-none">
+              <TabsContent
+                value="recorded"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 outline-none"
+              >
                 {recordedSessions.map((session) => (
-                  <motion.div 
+                  <motion.div
                     layout
-                    key={session.id} 
-                    className="bg-card border border-border rounded-xl overflow-hidden group cursor-pointer hover:shadow-lg transition-all" 
+                    key={session.id}
+                    className="bg-card border border-border rounded-xl overflow-hidden group cursor-pointer hover:shadow-lg transition-all"
                     onClick={() => handleSessionJoin(session)}
                   >
                     <div className="aspect-video bg-muted relative">
                       <div className="w-full h-full flex items-center justify-center">
-                        <Play className={`w-12 h-12 text-primary ${session.meeting_link ? 'opacity-40 group-hover:opacity-100' : 'opacity-10'} transition-opacity`} />
+                        <Play
+                          className={`w-12 h-12 text-primary ${session.meeting_link ? "opacity-40 group-hover:opacity-100" : "opacity-10"} transition-opacity`}
+                        />
                       </div>
                       {!session.meeting_link && (
                         <div className="absolute inset-0 bg-background/60 flex items-center justify-center flex-col gap-2">
-                           <AlertCircle className="w-6 h-6 text-muted-foreground" />
-                           <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Uploading...</span>
+                          <AlertCircle className="w-6 h-6 text-muted-foreground" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                            Uploading...
+                          </span>
                         </div>
                       )}
                     </div>
                     <div className="p-4">
                       <h3 className="font-bold truncate">{session.title}</h3>
-                      <p className="text-xs text-muted-foreground">Coach {session.instructor}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Coach {session.instructor}
+                      </p>
                     </div>
                   </motion.div>
                 ))}
