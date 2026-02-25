@@ -6,61 +6,53 @@ const corsHeaders = {
 };
 
 serve(async (req: Request) => {
-  // Handle CORS
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
     const { query } = await req.json();
-    const cleanQuery = query?.toLowerCase().trim();
-
-    if (!cleanQuery) {
-      return new Response(JSON.stringify({ foods: [] }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
-    }
+    if (!query) throw new Error("Search query is required");
 
     const appId = Deno.env.get("EDAMAM_APP_ID");
     const appKey = Deno.env.get("EDAMAM_APP_KEY");
 
-    //  URL 
-    const apiUrl = `https://api.edamam.com/api/food-database/v2/parser?app_id=${appId}&app_key=${appKey}&ingr=${encodeURIComponent(cleanQuery)}`;
-
-    // Fetch with error handling
-    const response = await fetch(apiUrl);
-    const contentType = response.headers.get("content-type");
-    if (!response.ok || !contentType?.includes("application/json")) {
-      const errorText = await response.text();
-      console.error("Edamam API returned non-JSON response:", errorText.substring(0, 100));
-      throw new Error(`API Error: ${response.status}. Check your API keys and Search term.`);
+    if (!appId || !appKey) {
+      throw new Error("Missing Edamam keys in Supabase Secrets");
     }
 
-    const data = await response.json();
-    const apiFoods = (data.hints || []).map((h: any) => ({
-      id: `edamam-${h.food.foodId}`,
-      name: h.food.label.toUpperCase(),
-      brand: h.food.brand || "Standard Reference",
-      calories: Math.round(h.food.nutrients.ENERC_KCAL || 0),
-      protein: parseFloat((h.food.nutrients.PROCNT || 0).toFixed(1)),
-      carbs: parseFloat((h.food.nutrients.CHOCDF || 0).toFixed(1)),
-      fats: parseFloat((h.food.nutrients.FAT || 0).toFixed(1)),
-    }));
+    // Call Edamam Food Database Parser
+    // nutrition-type=logging is best for fitness apps
+    const url = `https://api.edamam.com/api/food-database/v2/parser?app_id=${appId}&app_key=${appKey}&ingr=${encodeURIComponent(query)}&nutrition-type=logging`;
 
-    return new Response(JSON.stringify({ foods: apiFoods }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Edamam error: ${response.statusText}`);
+
+    const data = await response.json();
+
+    // Map Edamam 'hints' to your Widget's interface
+    const foods = (data.hints || []).map((hit: any) => {
+      const f = hit.food;
+      const nutrients = f.nutrients || {};
+
+      return {
+        id: `edam-${f.foodId}`,
+        meal_name: f.label?.toUpperCase() || "UNKNOWN",
+        brand: f.brand || "Generic",
+        // Nutrients are returned per 100g by Edamam
+        calories: Math.round(nutrients.ENERC_KCAL || 0),
+        protein_g: parseFloat((nutrients.PROCNT || 0).toFixed(1)),
+        carbs_g: parseFloat((nutrients.CHOCDF || 0).toFixed(1)),
+        fats_g: parseFloat((nutrients.FAT || 0).toFixed(1)),
+        serving: "100g" 
+      };
+    });
+
+    return new Response(JSON.stringify({ foods }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error("Function Error:", error.message);
-    return new Response(JSON.stringify({ 
-      error: "Search failed", 
-      details: error.message,
-      foods: [] 
-    }), { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200 
+    return new Response(JSON.stringify({ error: error.message, foods: [] }), { 
+      headers: corsHeaders 
     });
   }
 });

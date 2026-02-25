@@ -10,8 +10,7 @@ interface FoodSearchProps {
   mealType: string;
   onFoodLogged: () => void;
   onClose: () => void;
-  
-  nutritionGoals?: any; 
+  nutritionGoals?: any;
 }
 
 export function FoodSearch({ mealType, onFoodLogged, onClose, nutritionGoals }: FoodSearchProps) {
@@ -25,20 +24,18 @@ export function FoodSearch({ mealType, onFoodLogged, onClose, nutritionGoals }: 
     if (!query.trim()) return;
     setLoading(true);
     try {
-      
       const { data, error } = await supabase.functions.invoke("search-foods", {
         body: { query },
       });
 
       if (error) throw error;
-      
       setResults(data?.foods || []);
     } catch (err: any) {
       console.error("Search error:", err);
-      toast({ 
-        title: "Search failed", 
-        variant: "destructive", 
-        description: err.message || "Could not connect to nutrition database." 
+      toast({
+        title: "Search failed",
+        variant: "destructive",
+        description: err.message || "Could not connect to nutrition database.",
       });
     } finally {
       setLoading(false);
@@ -46,9 +43,9 @@ export function FoodSearch({ mealType, onFoodLogged, onClose, nutritionGoals }: 
   };
 
   const logFood = async (food: any) => {
-    // Get weight (default to 100g)
-    const weight = customWeights[food.id] || 100; 
-    const multiplier = weight / 100;
+    // Sync with Edge Function keys: food.meal_name, food.protein_g, etc.
+    const weight = customWeights[food.id] || 100;
+    const ratio = weight / 100;
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -57,11 +54,11 @@ export function FoodSearch({ mealType, onFoodLogged, onClose, nutritionGoals }: 
       const foodData = {
         user_id: user.id,
         meal_type: mealType,
-        meal_name: food.name,
-        calories: Math.round(food.calories * multiplier),
-        protein_g: Number((food.protein * multiplier).toFixed(1)),
-        carbs_g: Number((food.carbs * multiplier).toFixed(1)),
-        fats_g: Number((food.fats * multiplier).toFixed(1)),
+        meal_name: food.meal_name, // Changed from food.name
+        calories: Math.round(food.calories * ratio),
+        protein_g: Number((food.protein_g * ratio).toFixed(1)), // Changed from food.protein
+        carbs_g: Number((food.carbs_g * ratio).toFixed(1)),     // Changed from food.carbs
+        fats_g: Number((food.fats_g * ratio).toFixed(1)),       // Changed from food.fats
         log_date: new Date().toISOString().split("T")[0],
       };
 
@@ -69,26 +66,26 @@ export function FoodSearch({ mealType, onFoodLogged, onClose, nutritionGoals }: 
 
       if (error) throw error;
 
-      toast({ 
-        title: "Food Logged", 
-        description: `${food.name} (${weight}g) added to ${mealType.replace('_', ' ')}` 
+      toast({
+        title: "Food Logged",
+        description: `${food.meal_name} (${weight}g) added to ${mealType.replace('_', ' ')}`
       });
-      
+
       onFoodLogged();
       onClose();
     } catch (err: any) {
       console.error("Log error:", err);
-      toast({ 
-        title: "Error", 
-        variant: "destructive", 
-        description: "Failed to save to your log." 
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: "Failed to save to your log."
       });
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         className="bg-[#1A1F2C] border border-white/10 w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl"
@@ -107,7 +104,7 @@ export function FoodSearch({ mealType, onFoodLogged, onClose, nutritionGoals }: 
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               <Input
-                placeholder="Search food "
+                placeholder="Search food (e.g. Chicken breast)"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -124,7 +121,7 @@ export function FoodSearch({ mealType, onFoodLogged, onClose, nutritionGoals }: 
             {!loading && results.length === 0 && query && (
               <p className="text-center text-gray-500 py-8">Try a different search term.</p>
             )}
-            
+
             {results.map((food) => {
               const weight = customWeights[food.id] || 100;
               const ratio = weight / 100;
@@ -133,9 +130,9 @@ export function FoodSearch({ mealType, onFoodLogged, onClose, nutritionGoals }: 
                 <div key={food.id} className="p-4 rounded-xl bg-white/5 border border-white/5 hover:border-[#00D1B2]/30 transition-all">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
-                      <h4 className="font-bold text-sm text-gray-100 line-clamp-1">{food.name}</h4>
+                      <h4 className="font-bold text-sm text-gray-100 line-clamp-1">{food.meal_name}</h4>
                       <p className="text-[10px] text-gray-400 uppercase tracking-widest">
-                        {food.brand || 'Standard Reference'}
+                         {food.serving} • {food.brand || 'Generic'}
                       </p>
                     </div>
                     <div className="text-right min-w-[60px]">
@@ -152,26 +149,26 @@ export function FoodSearch({ mealType, onFoodLogged, onClose, nutritionGoals }: 
                       <input
                         type="number"
                         min="1"
-                        defaultValue="100"
+                        value={weight}
                         className="w-12 bg-transparent border-none text-center text-xs text-white focus:outline-none"
                         onChange={(e) => setCustomWeights({
-                          ...customWeights, 
+                          ...customWeights,
                           [food.id]: Number(e.target.value) || 0
                         })}
                       />
-                      <span className="text-[10px] font-bold text-gray-500">G</span>
+                      <span className="text-[10px] font-bold text-gray-500 uppercase">g</span>
                     </div>
 
                     {/* Macros Display */}
                     <div className="flex gap-3 text-[11px] text-gray-300">
-                      <span>P: <b>{(food.protein * ratio).toFixed(1)}g</b></span>
-                      <span>C: <b>{(food.carbs * ratio).toFixed(1)}g</b></span>
-                      <span>F: <b>{(food.fats * ratio).toFixed(1)}g</b></span>
+                      <span>P: <b>{(food.protein_g * ratio).toFixed(1)}g</b></span>
+                      <span>C: <b>{(food.carbs_g * ratio).toFixed(1)}g</b></span>
+                      <span>F: <b>{(food.fats_g * ratio).toFixed(1)}g</b></span>
                     </div>
 
-                    <Button 
-                      size="sm" 
-                      onClick={() => logFood(food)} 
+                    <Button
+                      size="sm"
+                      onClick={() => logFood(food)}
                       className="h-8 w-8 rounded-full p-0 bg-[#00D1B2] hover:bg-[#00BFA5] shrink-0"
                     >
                       <Plus className="w-4 h-4 text-white" />
